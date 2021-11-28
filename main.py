@@ -1,6 +1,6 @@
 import urllib.parse
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from deta import Deta
 
@@ -25,6 +25,14 @@ async def create_api(api_type: str, api_name: str, request: Request):
     return api
 
 
+@app.post(
+    "/edit/{api_key}/{api_type}/{api_name}",
+)
+async def edit_api(api_type: str, api_key: str, api_name: str, request: Request):
+    body = urllib.parse.quote(await request.body())
+    db.update({"api_name": api_name, "api_body": body, "api_type": api_type}, api_key)
+
+
 @app.get(
     "/list_api",
 )
@@ -43,12 +51,20 @@ def delete_api(key: str):
 @app.get(
     "/call/{key}"
 )
-def get_call(key: str):
-    return Response(content=urllib.parse.unquote(db.get(key)['api_body']))
+def get_call(key: str, response: Response):
+    value = db.get(key)
+    if value['api_type'] != 'GET':
+        response.status_code = status.HTTP_405_METHOD_NOT_ALLOWED
+        return 'METHOD_NOT_ALLOWED'
+    return Response(content=urllib.parse.unquote(value['api_body']))
 
 
 @app.post(
     "/call/{key}"
 )
-def post_call(key: str):
-    return Response(content=urllib.parse.unquote(db.get(key)['api_body']))
+def post_call(key: str, response: Response):
+    value = db.get(key)
+    if value['api_type'] != 'POST':
+        response.status_code = status.HTTP_405_METHOD_NOT_ALLOWED
+        return 'METHOD_NOT_ALLOWED'
+    return Response(content=urllib.parse.unquote(value['api_body']))

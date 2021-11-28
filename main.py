@@ -1,9 +1,17 @@
 import urllib.parse
 
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 from deta import Deta
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 deta = Deta()
 db = deta.Base("api_db")
 
